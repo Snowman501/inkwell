@@ -53,6 +53,7 @@ export default function NovelWriter() {
   const [model, setModel] = useState('qwen2.5:7b');
   const [showManager, setShowManager] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
+  const [authorInput, setAuthorInput] = useState('');
   const [currentMode, setCurrentMode] = useState('freewrite');
   const messagesEndRef = useRef(null);
 
@@ -123,6 +124,7 @@ export default function NovelWriter() {
     if (novel) {
       setCurrentNovelId(id);
       setMessages(novel.messages || []);
+      setAuthorInput(novel.author || '');
     }
   };
 
@@ -141,6 +143,12 @@ export default function NovelWriter() {
     }
   };
 
+  const setAuthor = (id, author) => {
+    const updated = novels.map((n) => (n.id === id ? { ...n, author } : n));
+    setNovels(updated);
+    localStorage.setItem('novels', JSON.stringify(updated));
+  };
+
   const renameNovel = (id, newTitle) => {
     const updatedNovels = novels.map((n) =>
       n.id === id ? { ...n, title: newTitle } : n
@@ -150,7 +158,7 @@ export default function NovelWriter() {
   };
 
   const exportToEpub = async () => {
-    const novel = novels.find((n) => n.id === currentNovelId);
+    const novel = currentNovel;
     if (!novel || chapters.length === 0) return;
     try {
       const blob = await buildEpub({
@@ -350,6 +358,22 @@ export default function NovelWriter() {
                     Updated: {new Date(currentNovel.updatedAt).toLocaleDateString()}
                   </p>
                 </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 mb-1">
+                    AUTHOR
+                  </label>
+                  <input
+                    type="text"
+                    value={authorInput}
+                    onChange={(e) => {
+                      setAuthorInput(e.target.value);
+                      setAuthor(currentNovel.id, e.target.value);
+                    }}
+                    placeholder="Your name"
+                    className="w-full bg-gray-700 text-white px-2 py-1 rounded text-sm border border-gray-600 focus:border-purple-400 focus:outline-none"
+                  />
+                </div>
+
                 <button
                   onClick={exportToMarkdown}
                   className="w-full bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-sm font-semibold transition"
