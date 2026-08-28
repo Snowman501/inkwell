@@ -1,6 +1,39 @@
 import React, { useState, useRef, useEffect } from 'react';
 import NovelManager from './NovelManager';
 
+const WRITING_MODES = {
+  freewrite: {
+    name: 'Freewrite',
+    icon: '✍️',
+    description: 'Continue the story naturally',
+    prompt: '',
+  },
+  outline: {
+    name: 'Outline',
+    icon: '📋',
+    description: 'Generate chapter structure and plot points',
+    prompt: 'Create a detailed outline for the next chapters. Include main plot points, character arcs, and story beats. Format as numbered chapters with bullet points for key events.',
+  },
+  characterBios: {
+    name: 'Character Bios',
+    icon: '👤',
+    description: 'Develop character profiles and backstories',
+    prompt: 'Create detailed character bios for the main characters in this story. Include: name, age, background, motivations, strengths, weaknesses, relationships, and role in the plot. Format each character clearly.',
+  },
+  edit: {
+    name: 'Edit',
+    icon: '✏️',
+    description: 'Refine and improve existing prose',
+    prompt: 'Take the previous section and refine it. Improve prose quality, fix grammar, enhance descriptions, add sensory details, and strengthen dialogue. Keep the same story and characters but make it more polished and engaging.',
+  },
+  expand: {
+    name: 'Expand',
+    icon: '📖',
+    description: 'Add 500-2000 words of detail',
+    prompt: 'Expand the previous section significantly (add 500-2000 words). Add more dialogue, internal monologue, sensory details, action sequences, and emotional depth. Deepen the story without changing core plot points.',
+  },
+};
+
 export default function NovelWriter() {
   const [novels, setNovels] = useState([]);
   const [currentNovelId, setCurrentNovelId] = useState(null);
@@ -10,9 +43,9 @@ export default function NovelWriter() {
   const [model, setModel] = useState('llama3.2:1b');
   const [showManager, setShowManager] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
+  const [currentMode, setCurrentMode] = useState('freewrite');
   const messagesEndRef = useRef(null);
 
-  // Load novels from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('novels');
     if (saved) {
@@ -24,14 +57,12 @@ export default function NovelWriter() {
     }
   }, []);
 
-  // Auto-save after messages change
   useEffect(() => {
     if (currentNovelId && messages.length > 0) {
       autoSave();
     }
   }, [messages]);
 
-  // Scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -138,16 +169,27 @@ export default function NovelWriter() {
   };
 
   const streamFromOllama = async (userMessage) => {
-    const conversationContext = messages
+    const mode = WRITING_MODES[currentMode];
+    const MAX_CONTEXT_CHARS = 6000;
+    let conversationContext = messages
       .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
       .join('\n');
+    if (conversationContext.length > MAX_CONTEXT_CHARS) {
+      conversationContext =
+        '[earlier chapters omitted]\n...' +
+        conversationContext.slice(-MAX_CONTEXT_CHARS);
+    }
 
-    const prompt = conversationContext
-      ? `${conversationContext}\nUser: ${userMessage}\nAssistant:`
-      : userMessage;
+    let prompt = userMessage;
+    
+    if (mode.prompt) {
+      prompt = `${mode.prompt}\n\nCurrent story context:\n${conversationContext || 'No story yet'}\n\nUser request: ${userMessage}`;
+    } else if (conversationContext) {
+      prompt = `${conversationContext}\nUser: ${userMessage}\nAssistant:`;
+    }
 
     try {
-      const response = await fetch('http://localhost:11434/api/generate', {
+      const response = await fetch('/ollama/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -235,6 +277,7 @@ export default function NovelWriter() {
   const currentNovel = novels.find((n) => n.id === currentNovelId);
   const chapterCount = messages.filter((m) => m.role === 'assistant').length;
   const wordCount = currentNovel?.wordCount || 0;
+  const mode = WRITING_MODES[currentMode];
 
   return (
     <div className="flex h-screen bg-gray-900 text-white">
@@ -290,8 +333,28 @@ export default function NovelWriter() {
         <div className="bg-gray-800 border-b border-gray-700 p-4">
           <h1 className="text-2xl font-bold text-purple-400">✍️ Novel Writer</h1>
           <p className="text-sm text-gray-400">
-            {model} • {lastSaved ? `Saved ${new Date(lastSaved).toLocaleTimeString()}` : 'Ready'}
+            {mode.icon} {mode.name} • {model}
           </p>
+        </div>
+
+        {/* Mode Selector */}
+        <div className="bg-gray-750 border-b border-gray-700 p-3 overflow-x-auto">
+          <div className="flex space-x-2">
+            {Object.entries(WRITING_MODES).map(([key, modeData]) => (
+              <button
+                key={key}
+                onClick={() => setCurrentMode(key)}
+                className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition ${
+                  currentMode === key
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+                title={modeData.description}
+              >
+                {modeData.icon} {modeData.name}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Chat Area */}
@@ -301,7 +364,7 @@ export default function NovelWriter() {
               <div className="text-center">
                 <p className="text-gray-400 mb-2">Start writing your novel...</p>
                 <p className="text-sm text-gray-500">
-                  Auto-saves after each message
+                  Current mode: {mode.icon} {mode.name}
                 </p>
               </div>
             </div>
@@ -358,7 +421,7 @@ export default function NovelWriter() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Continue writing..."
+                placeholder={`${mode.description}...`}
                 disabled={isLoading}
                 className="flex-1 bg-gray-700 text-white px-4 py-3 rounded-lg border border-gray-600 focus:border-purple-400 focus:outline-none disabled:opacity-50"
               />
