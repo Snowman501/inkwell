@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import NovelManager from './NovelManager';
+import { detectChapters } from '../utils/chapters';
 
 const SYSTEM_PROMPT = `You are a fiction-writing assistant helping an author draft a novel.
 
@@ -48,7 +49,7 @@ export default function NovelWriter() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [model, setModel] = useState('llama3.2:1b');
+  const [model, setModel] = useState('qwen2.5:7b');
   const [showManager, setShowManager] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [currentMode, setCurrentMode] = useState('freewrite');
@@ -283,6 +284,7 @@ export default function NovelWriter() {
     await streamFromOllama(input);
   };
 
+  const chapters = detectChapters(messages);
   const currentNovel = novels.find((n) => n.id === currentNovelId);
   const chapterCount = messages.filter((m) => m.role === 'assistant').length;
   const wordCount = currentNovel?.wordCount || 0;
@@ -330,6 +332,24 @@ export default function NovelWriter() {
                 >
                   ⬇️ Export MD
                 </button>
+
+                {chapters.length > 0 && (
+                  <div className="pt-3 border-t border-gray-700">
+                    <p className="text-xs font-semibold text-gray-400 mb-2">
+                      DETECTED CHAPTERS ({chapters.length})
+                    </p>
+                    <div className="space-y-1">
+                      {chapters.map((c) => (
+                        <div key={c.id} className="text-xs bg-gray-700 rounded px-2 py-1">
+                          <p className="font-semibold text-gray-200 truncate">
+                            {c.heading}{c.title ? ': ' + c.title : ''}
+                          </p>
+                          <p className="text-gray-400">{c.wordCount} words</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
