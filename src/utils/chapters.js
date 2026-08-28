@@ -2,6 +2,16 @@
 
 const HEADING_RE = /^\s*((?:PART|BOOK)\s+[\w\d]+|CHAPTER\s+[\w\d]+|(?:Chapter|Part)\s+[\w\d]+)\b[:.\s-]*(.*)$/i;
 
+function stripMarkdown(text) {
+  return text
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/`(.+?)`/g, '$1')
+    .replace(/^\s*---+\s*$/gm, '')
+    .replace(/\n{3,}/g, '\n\n');
+}
+
 export function detectChapters(messages) {
   const prose = messages
     .filter((m) => m.role === 'assistant')
@@ -33,7 +43,7 @@ export function detectChapters(messages) {
 
   return chapters
     .map((c, i) => {
-      const body = c.lines.join('\n').trim();
+      const body = stripMarkdown(c.lines.join('\n')).trim();
       return {
         id: i,
         heading: c.heading || (chapters.length === 1 ? 'Untitled' : `Section ${i + 1}`),
