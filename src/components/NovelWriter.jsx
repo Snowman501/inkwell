@@ -3,6 +3,7 @@ import NovelManager from './NovelManager';
 import { detectChapters } from '../utils/chapters';
 import { buildEpub } from '../utils/epub';
 import { buildPdf } from '../utils/pdf';
+import { buildHtml } from '../utils/html';
 
 const SYSTEM_PROMPT = `You are a fiction-writing assistant helping an author draft a novel.
 
@@ -156,6 +157,30 @@ export default function NovelWriter() {
     );
     setNovels(updatedNovels);
     localStorage.setItem('novels', JSON.stringify(updatedNovels));
+  };
+
+  const exportToHtml = () => {
+    const novel = currentNovel;
+    if (!novel || chapters.length === 0) return;
+    try {
+      const html = buildHtml({
+        title: novel.title,
+        author: novel.author || '',
+        chapters,
+      });
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${novel.title}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('HTML export failed:', err);
+      alert('HTML export failed: ' + err.message);
+    }
   };
 
   const exportToPdf = () => {
@@ -417,6 +442,13 @@ export default function NovelWriter() {
                   className="w-full bg-rose-600 hover:bg-rose-700 disabled:bg-gray-600 px-3 py-2 rounded text-sm font-semibold transition"
                 >
                   📄 Export PDF
+                </button>
+                <button
+                  onClick={exportToHtml}
+                  disabled={chapters.length === 0}
+                  className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-gray-600 px-3 py-2 rounded text-sm font-semibold transition"
+                >
+                  🌐 Export HTML
                 </button>
 
                 {chapters.length > 0 && (
