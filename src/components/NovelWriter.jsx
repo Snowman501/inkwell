@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import NovelManager from './NovelManager';
 import { detectChapters } from '../utils/chapters';
 import { buildEpub } from '../utils/epub';
+import { buildPdf } from '../utils/pdf';
 
 const SYSTEM_PROMPT = `You are a fiction-writing assistant helping an author draft a novel.
 
@@ -155,6 +156,29 @@ export default function NovelWriter() {
     );
     setNovels(updatedNovels);
     localStorage.setItem('novels', JSON.stringify(updatedNovels));
+  };
+
+  const exportToPdf = () => {
+    const novel = currentNovel;
+    if (!novel || chapters.length === 0) return;
+    try {
+      const blob = buildPdf({
+        title: novel.title,
+        author: novel.author || '',
+        chapters,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${novel.title}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('PDF export failed:', err);
+      alert('PDF export failed: ' + err.message);
+    }
   };
 
   const exportToEpub = async () => {
@@ -386,6 +410,13 @@ export default function NovelWriter() {
                   className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 px-3 py-2 rounded text-sm font-semibold transition"
                 >
                   📕 Export ePub
+                </button>
+                <button
+                  onClick={exportToPdf}
+                  disabled={chapters.length === 0}
+                  className="w-full bg-rose-600 hover:bg-rose-700 disabled:bg-gray-600 px-3 py-2 rounded text-sm font-semibold transition"
+                >
+                  📄 Export PDF
                 </button>
 
                 {chapters.length > 0 && (
