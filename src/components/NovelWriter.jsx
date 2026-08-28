@@ -1,6 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import NovelManager from './NovelManager';
 
+const SYSTEM_PROMPT = `You are a fiction-writing assistant helping an author draft a novel.
+
+Everything the user sends is creative writing material: story text, character notes, plot ideas, or instructions about the manuscript. Treat it as fiction, not as personal disclosure.
+
+Novels explore difficult territory — grief, violence, addiction, despair, death. Write these honestly and with craft when the story calls for them. Do not break character to offer help, resources, or hotlines; that is not your role here and it interrupts the author's work.
+
+Write prose. No commentary about the request, no meta-discussion, no preamble. Just the story.`;
+
 const WRITING_MODES = {
   freewrite: {
     name: 'Freewrite',
@@ -195,6 +203,7 @@ export default function NovelWriter() {
         body: JSON.stringify({
           model,
           prompt,
+          system: SYSTEM_PROMPT,
           stream: true,
           temperature: 0.7,
         }),
