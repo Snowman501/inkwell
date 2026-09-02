@@ -4,6 +4,7 @@ import { detectChapters } from '../utils/chapters';
 import { buildEpub } from '../utils/epub';
 import { buildPdf } from '../utils/pdf';
 import { buildHtml } from '../utils/html';
+import { migrateNovels } from '../utils/migrate';
 
 const SYSTEM_PROMPT = `You are a fiction-writing assistant helping an author draft a novel.
 
@@ -56,13 +57,16 @@ export default function NovelWriter() {
   const [showManager, setShowManager] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [authorInput, setAuthorInput] = useState('');
+  const [view, setView] = useState('write');
+  const [draft, setDraft] = useState('');
   const [currentMode, setCurrentMode] = useState('freewrite');
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('novels');
     if (saved) {
-      const parsedNovels = JSON.parse(saved);
+      const parsedNovels = migrateNovels(JSON.parse(saved));
+      localStorage.setItem('novels', JSON.stringify(parsedNovels));
       setNovels(parsedNovels);
       if (parsedNovels.length > 0) {
         loadNovel(parsedNovels[0].id);
@@ -127,6 +131,7 @@ export default function NovelWriter() {
       setCurrentNovelId(id);
       setMessages(novel.messages || []);
       setAuthorInput(novel.author || '');
+      setDraft(novel.manuscript || '');
     }
   };
 
@@ -149,6 +154,19 @@ export default function NovelWriter() {
     const updated = novels.map((n) => (n.id === id ? { ...n, author } : n));
     setNovels(updated);
     localStorage.setItem('novels', JSON.stringify(updated));
+  };
+
+  const saveManuscript = (text) => {
+    setDraft(text);
+    if (!currentNovelId) return;
+    const updated = novels.map((n) =>
+      n.id === currentNovelId
+        ? { ...n, manuscript: text, updatedAt: new Date().toISOString() }
+        : n
+    );
+    setNovels(updated);
+    localStorage.setItem('novels', JSON.stringify(updated));
+    setLastSaved(new Date());
   };
 
   const renameNovel = (id, newTitle) => {
@@ -484,6 +502,42 @@ export default function NovelWriter() {
           </p>
         </div>
 
+        {/* View Tabs */}
+        <div className="bg-gray-800 border-b border-gray-700 px-3 pt-2 flex space-x-2">
+          {[['write', '💬 Write'], ['manuscript', '📖 Manuscript']].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setView(key)}
+              className={`px-4 py-2 rounded-t-lg text-sm font-semibold transition ${
+                view === key
+                  ? 'bg-gray-900 text-purple-400'
+                  : 'text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {view === 'manuscript' ? (
+          <div className="flex-1 flex flex-col bg-gray-900 p-6 overflow-hidden">
+            <div className="flex justify-between items-center mb-3">
+              <p className="text-sm text-gray-400">
+                {draft.trim() ? draft.trim().split(/\s+/).length : 0} words
+              </p>
+              <p className="text-xs text-gray-500">Edits save automatically</p>
+            </div>
+            <textarea
+              value={draft}
+              onChange={(e) => saveManuscript(e.target.value)}
+              placeholder="Your manuscript will appear here as you write..."
+              className="flex-1 w-full bg-gray-800 text-gray-100 p-6 rounded-lg border border-gray-700 focus:border-purple-400 focus:outline-none resize-none leading-relaxed"
+              style={{ fontFamily: 'Georgia, serif', fontSize: '16px' }}
+            />
+          </div>
+        ) : (
+        <>
+
         {/* Mode Selector */}
         <div className="bg-gray-750 border-b border-gray-700 p-3 overflow-x-auto">
           <div className="flex space-x-2">
@@ -582,6 +636,8 @@ export default function NovelWriter() {
             </form>
           )}
         </div>
+        </>
+        )}
       </div>
     </div>
   );
