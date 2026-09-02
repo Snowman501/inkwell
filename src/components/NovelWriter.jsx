@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import NovelManager from './NovelManager';
+import Welcome from './Welcome';
 import { detectChapters } from '../utils/chapters';
 import { buildEpub } from '../utils/epub';
 import { buildPdf } from '../utils/pdf';
@@ -426,6 +427,14 @@ export default function NovelWriter() {
   const chapterCount = messages.filter((m) => m.role === 'assistant').length;
   const wordCount = currentNovel?.wordCount || 0;
   const mode = WRITING_MODES[currentMode];
+
+  if (novels.length === 0) {
+    return (
+      <div className="flex h-screen bg-gray-900 text-white">
+        <Welcome onStart={() => createNewNovel('My First Novel')} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-900 text-white">
