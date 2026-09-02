@@ -53,7 +53,7 @@ export default function NovelWriter() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [model, setModel] = useState('qwen2.5:7b');
+  const [model, setModel] = useState('qwen2.5:3b');
   const [showManager, setShowManager] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [authorInput, setAuthorInput] = useState('');
@@ -351,6 +351,21 @@ export default function NovelWriter() {
         }
       }
 
+      if (fullResponse.trim()) {
+        setDraft((prev) => {
+          const next = prev.trim()
+            ? prev.trimEnd() + '\n\n' + fullResponse.trim()
+            : fullResponse.trim();
+          setNovels((ns) => {
+            const updated = ns.map((n) =>
+              n.id === currentNovelId ? { ...n, manuscript: next } : n
+            );
+            localStorage.setItem('novels', JSON.stringify(updated));
+            return updated;
+          });
+          return next;
+        });
+      }
       setIsLoading(false);
     } catch (error) {
       console.error('Error:', error);
