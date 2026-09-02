@@ -3,10 +3,10 @@ export default function Welcome({ onStart }) {
     <div className="flex-1 overflow-y-auto bg-gray-900 text-gray-100">
       <div className="max-w-2xl mx-auto px-6 py-16">
         <h1 className="text-4xl font-bold text-purple-400 mb-3">
-          ✍️ Inkwell
+          ✍️ Barnhart
         </h1>
         <p className="text-xl text-gray-300 mb-8">
-          Write, edit, and publish a whole book — without leaving one app.
+          From blank page to finished book.
         </p>
 
         <button
@@ -55,7 +55,7 @@ export default function Welcome({ onStart }) {
               Before you start
             </h2>
             <p className="text-gray-400 leading-relaxed mb-3">
-              Inkwell needs Ollama running locally. It's free and open source.
+              Barnhart needs Ollama running locally. It's free and open source.
             </p>
             <ol className="text-gray-400 leading-relaxed list-decimal list-inside space-y-1">
               <li>

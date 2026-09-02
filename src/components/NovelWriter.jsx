@@ -587,7 +587,7 @@ export default function NovelWriter() {
             >
               ☰
             </button>
-            <h1 className="text-2xl font-bold text-purple-400">✍️ Novel Writer</h1>
+            <h1 className="text-2xl font-bold text-purple-400">✍️ Barnhart</h1>
           </div>
           <p className="text-sm text-gray-400">
             {mode.icon} {mode.name} • {model}
