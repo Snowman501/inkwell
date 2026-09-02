@@ -5,6 +5,7 @@ import { buildEpub } from '../utils/epub';
 import { buildPdf } from '../utils/pdf';
 import { buildHtml } from '../utils/html';
 import { migrateNovels } from '../utils/migrate';
+import { exportBackup, parseBackup, mergeNovels } from '../utils/backup';
 
 const SYSTEM_PROMPT = `You are a fiction-writing assistant helping an author draft a novel.
 
@@ -62,6 +63,7 @@ export default function NovelWriter() {
   const [draft, setDraft] = useState('');
   const [currentMode, setCurrentMode] = useState('freewrite');
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('novels');
@@ -169,6 +171,25 @@ export default function NovelWriter() {
     setNovels(updated);
     localStorage.setItem('novels', JSON.stringify(updated));
     setLastSaved(new Date());
+  };
+
+  const handleRestore = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const incoming = migrateNovels(parseBackup(reader.result));
+        const merged = mergeNovels(novels, incoming);
+        setNovels(merged);
+        localStorage.setItem('novels', JSON.stringify(merged));
+        alert(`Restored. You now have ${merged.length} novel(s).`);
+      } catch (err) {
+        alert('Restore failed: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const renameNovel = (id, newTitle) => {
@@ -421,6 +442,28 @@ export default function NovelWriter() {
         } md:translate-x-0 fixed md:static inset-y-0 left-0 z-30 w-64 bg-gray-800 border-r border-gray-700 flex flex-col transition-transform duration-200`}
       >
         <div className="p-4 border-b border-gray-700">
+          <div className="flex gap-2 mb-2">
+            <button
+              onClick={() => exportBackup(novels)}
+              className="flex-1 bg-gray-700 hover:bg-gray-600 px-2 py-1.5 rounded text-xs font-semibold transition"
+              title="Download all novels as a file"
+            >
+              💾 Backup
+            </button>
+            <button
+              onClick={() => fileInputRef.current && fileInputRef.current.click()}
+              className="flex-1 bg-gray-700 hover:bg-gray-600 px-2 py-1.5 rounded text-xs font-semibold transition"
+            >
+              📂 Restore
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json,.json"
+              onChange={handleRestore}
+              style={{ display: 'none' }}
+            />
+          </div>
           <button
             onClick={() => setShowManager(!showManager)}
             className="w-full bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg font-semibold transition"
