@@ -125,7 +125,11 @@ export default function NovelWriter() {
     const updatedNovels = [newNovel, ...novels];
     setNovels(updatedNovels);
     localStorage.setItem('novels', JSON.stringify(updatedNovels));
-    loadNovel(newNovel.id);
+    setCurrentNovelId(newNovel.id);
+    setMessages([]);
+    setDraft('');
+    setAuthorInput('');
+    setSidebarOpen(false);
     setShowManager(false);
   };
 
