@@ -129,6 +129,7 @@ export default function NovelWriter() {
   const loadNovel = (id) => {
     const novel = novels.find((n) => n.id === id);
     if (novel) {
+      setSidebarOpen(false);
       setCurrentNovelId(id);
       setMessages(novel.messages || []);
       setAuthorInput(novel.author || '');
