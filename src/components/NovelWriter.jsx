@@ -58,6 +58,7 @@ export default function NovelWriter() {
   const [lastSaved, setLastSaved] = useState(null);
   const [authorInput, setAuthorInput] = useState('');
   const [view, setView] = useState('write');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [currentMode, setCurrentMode] = useState('freewrite');
   const messagesEndRef = useRef(null);
@@ -407,7 +408,17 @@ export default function NovelWriter() {
   return (
     <div className="flex h-screen bg-gray-900 text-white">
       {/* Sidebar */}
-      <div className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-black/60 z-20 md:hidden"
+        />
+      )}
+      <div
+        className={`${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } md:translate-x-0 fixed md:static inset-y-0 left-0 z-30 w-64 bg-gray-800 border-r border-gray-700 flex flex-col transition-transform duration-200`}
+      >
         <div className="p-4 border-b border-gray-700">
           <button
             onClick={() => setShowManager(!showManager)}
@@ -511,7 +522,16 @@ export default function NovelWriter() {
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <div className="bg-gray-800 border-b border-gray-700 p-4">
-          <h1 className="text-2xl font-bold text-purple-400">✍️ Novel Writer</h1>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="md:hidden text-gray-300 hover:text-white text-2xl leading-none"
+              aria-label="Open menu"
+            >
+              ☰
+            </button>
+            <h1 className="text-2xl font-bold text-purple-400">✍️ Novel Writer</h1>
+          </div>
           <p className="text-sm text-gray-400">
             {mode.icon} {mode.name} • {model}
           </p>
