@@ -73,6 +73,15 @@ export default function NovelWriter() {
       localStorage.setItem('novels', JSON.stringify(parsedNovels));
       setNovels(parsedNovels);
       if (parsedNovels.length > 0) {
+        const recent = [...parsedNovels].sort(
+          (a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0)
+        )[0];
+        setCurrentNovelId(recent.id);
+        setMessages(recent.messages || []);
+        setDraft(recent.manuscript || '');
+        setAuthorInput(recent.author || '');
+      }
+      if (false) {
         loadNovel(parsedNovels[0].id);
       }
     }
