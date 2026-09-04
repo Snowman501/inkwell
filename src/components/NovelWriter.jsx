@@ -7,6 +7,7 @@ import { buildPdf } from '../utils/pdf';
 import { buildHtml } from '../utils/html';
 import { migrateNovels } from '../utils/migrate';
 import { exportBackup, parseBackup, mergeNovels } from '../utils/backup';
+import { recordProgress, wordsToday, streak } from '../utils/goals';
 
 const SYSTEM_PROMPT = `You are a fiction-writing assistant helping an author draft a novel.
 
@@ -62,6 +63,7 @@ export default function NovelWriter() {
   const [view, setView] = useState('write');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [draft, setDraft] = useState('');
+  const [goalInput, setGoalInput] = useState(500);
   const [currentMode, setCurrentMode] = useState('freewrite');
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -151,6 +153,7 @@ export default function NovelWriter() {
       setMessages(novel.messages || []);
       setAuthorInput(novel.author || '');
       setDraft(novel.manuscript || '');
+      setGoalInput(novel.dailyGoal || 500);
     }
   };
 
@@ -193,12 +196,27 @@ export default function NovelWriter() {
     }, 60);
   };
 
+  const setGoal = (id, value) => {
+    setGoalInput(value);
+    const updated = novels.map((n) =>
+      n.id === id ? { ...n, dailyGoal: Number(value) || 0 } : n
+    );
+    setNovels(updated);
+    localStorage.setItem('novels', JSON.stringify(updated));
+  };
+
   const saveManuscript = (text) => {
     setDraft(text);
     if (!currentNovelId) return;
+    const count = text.trim() ? text.trim().split(/\s+/).length : 0;
     const updated = novels.map((n) =>
       n.id === currentNovelId
-        ? { ...n, manuscript: text, updatedAt: new Date().toISOString() }
+        ? {
+            ...n,
+            manuscript: text,
+            history: recordProgress(n.history, count),
+            updatedAt: new Date().toISOString(),
+          }
         : n
     );
     setNovels(updated);
@@ -536,6 +554,46 @@ export default function NovelWriter() {
                     Updated: {new Date(currentNovel.updatedAt).toLocaleDateString()}
                   </p>
                 </div>
+                <div className="pb-3 border-b border-gray-700">
+                  <div className="flex justify-between items-baseline mb-1">
+                    <span className="text-xs font-semibold text-gray-400">
+                      TODAY
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {wordsToday(currentNovel.history)} / {goalInput}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-gray-700 rounded overflow-hidden mb-2">
+                    <div
+                      className="h-full bg-green-500 transition-all"
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          goalInput
+                            ? (wordsToday(currentNovel.history) / goalInput) * 100
+                            : 0
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="100"
+                      value={goalInput}
+                      onChange={(e) => setGoal(currentNovel.id, e.target.value)}
+                      className="w-20 bg-gray-700 text-white px-2 py-1 rounded text-xs border border-gray-600 focus:border-purple-400 focus:outline-none"
+                    />
+                    <span className="text-xs text-gray-500">daily goal</span>
+                    {streak(currentNovel.history, goalInput) > 0 && (
+                      <span className="text-xs text-orange-400 ml-auto">
+                        🔥 {streak(currentNovel.history, goalInput)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-gray-400 mb-1">
                     AUTHOR
