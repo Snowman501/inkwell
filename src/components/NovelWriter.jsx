@@ -65,6 +65,7 @@ export default function NovelWriter() {
   const [currentMode, setCurrentMode] = useState('freewrite');
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const manuscriptRef = useRef(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('novels');
@@ -172,6 +173,24 @@ export default function NovelWriter() {
     const updated = novels.map((n) => (n.id === id ? { ...n, author } : n));
     setNovels(updated);
     localStorage.setItem('novels', JSON.stringify(updated));
+  };
+
+  const jumpToChapter = (chapter) => {
+    setView('manuscript');
+    setSidebarOpen(false);
+    setTimeout(() => {
+      const ta = manuscriptRef.current;
+      if (!ta) return;
+      const needle = chapter.title
+        ? chapter.heading + ': ' + chapter.title
+        : chapter.heading;
+      const idx = ta.value.indexOf(needle);
+      const pos = idx === -1 ? 0 : idx;
+      ta.focus();
+      ta.setSelectionRange(pos, pos + needle.length);
+      const ratio = pos / Math.max(1, ta.value.length);
+      ta.scrollTop = Math.max(0, ratio * ta.scrollHeight - 60);
+    }, 60);
   };
 
   const saveManuscript = (text) => {
@@ -568,7 +587,11 @@ export default function NovelWriter() {
                     </p>
                     <div className="space-y-1">
                       {chapters.map((c) => (
-                        <div key={c.id} className="text-xs bg-gray-700 rounded px-2 py-1">
+                        <div
+                          key={c.id}
+                          onClick={() => jumpToChapter(c)}
+                          className="text-xs bg-gray-700 hover:bg-gray-600 rounded px-2 py-1 cursor-pointer transition"
+                        >
                           <p className="font-semibold text-gray-200 truncate">
                             {c.heading}{c.title ? ': ' + c.title : ''}
                           </p>
@@ -629,6 +652,7 @@ export default function NovelWriter() {
               <p className="text-xs text-gray-500">Edits save automatically</p>
             </div>
             <textarea
+              ref={manuscriptRef}
               value={draft}
               onChange={(e) => saveManuscript(e.target.value)}
               placeholder="Your manuscript will appear here as you write..."
